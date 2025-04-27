@@ -30,9 +30,7 @@ def estimate_pose_pnp(object_points, image_points, K, distCoeffs):
     )
     if not success:
         raise ValueError("PnP failed.")
-    R, _ = cv2.Rodrigues(rvec)
-    t = tvec.reshape(3, 1)
-    return R, t
+    return rvec, tvec
 
 def estimate_pose_pnp_ransac(object_points, image_points, K, distCoeffs, iterationsCount=5000, reprojectionError=20):
     """
@@ -47,16 +45,13 @@ def estimate_pose_pnp_ransac(object_points, image_points, K, distCoeffs, iterati
    
     success, rvec, tvec, inliers = cv2.solvePnPRansac(
         object_points, image_points, K, distCoeffs=distCoeffs,
-        iterationsCount=5000,
-    reprojectionError=20,
+        iterationsCount=iterationsCount,
+        reprojectionError=reprojectionError,
         flags=cv2.SOLVEPNP_ITERATIVE,
-
     )
     if not success:
         raise ValueError("PnP failed.")
-    R, _ = cv2.Rodrigues(rvec)
-    t = tvec.reshape(3, 1)
-    return R, t
+    return rvec, tvec
 
 def compute_reprojection_error(R, t, object_points, image_points, K, dist_coeffs=None):
     """Compute mean 2D reprojection error."""
