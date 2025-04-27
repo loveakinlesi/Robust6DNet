@@ -1,5 +1,10 @@
 from PIL import Image
 
+def crop_image(image, bbox):
+    x, y, w, h = bbox
+    cropped_img = image[y:y+h, x:x+w]
+    return cropped_img
+
 def crop_and_resize(image: Image.Image, bbox, size=(128, 128)):
     """
     Crop a PIL image using bbox and resize to model input size.
