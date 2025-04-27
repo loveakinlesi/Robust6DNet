@@ -2,3 +2,6 @@
 datasets/lm/models_eval
 datasets/lm/test
 datasets/lm/train_pbr
+data/crops
+data/heatmaps
+utils/__pycache__/*
