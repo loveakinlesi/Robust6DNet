@@ -1,0 +1,1 @@
+Run `python download_lm.py` to download the linemod dataset
