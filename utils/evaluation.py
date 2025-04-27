@@ -12,7 +12,7 @@ def compute_mde(pred_keypoints, gt_keypoints):
     distances = np.linalg.norm(pred_keypoints - gt_keypoints, axis=1)
     return distances.mean()
 
-def estimate_pose_pnp(object_points, image_points, K, distCoeffs):
+def estimate_pose_pnp(object_points, image_points, K, dist_coeffs=None):
     """
     Estimate pose using PnP (with or without RANSAC).
     object_points: (N, 3)
@@ -22,8 +22,11 @@ def estimate_pose_pnp(object_points, image_points, K, distCoeffs):
     object_points = np.array(object_points, dtype=np.float32)
     image_points = np.array(image_points, dtype=np.float32)
 
+    if dist_coeffs is None:
+        dist_coeffs = np.zeros((4, 1))
+
     success, rvec, tvec, inliers = cv2.solvePnPRansac(
-        object_points, image_points, K, distCoeffs=distCoeffs,
+        object_points, image_points, K, distCoeffs=dist_coeffs,
             iterationsCount=5000,
     reprojectionError=20,
         flags=cv2.SOLVEPNP_ITERATIVE
@@ -32,7 +35,7 @@ def estimate_pose_pnp(object_points, image_points, K, distCoeffs):
         raise ValueError("PnP failed.")
     return rvec, tvec
 
-def estimate_pose_pnp_ransac(object_points, image_points, K, distCoeffs, iterationsCount=5000, reprojectionError=20):
+def estimate_pose_pnp_ransac(object_points, image_points, K, dist_coeffs=None, iterationsCount=5000, reprojectionError=20):
     """
     Estimate pose using PnP (with or without RANSAC).
     object_points: (N, 3)
@@ -41,10 +44,11 @@ def estimate_pose_pnp_ransac(object_points, image_points, K, distCoeffs, iterati
     """
     object_points = np.array(object_points, dtype=np.float32)
     image_points = np.array(image_points, dtype=np.float32)
-                
+    if dist_coeffs is None:
+        dist_coeffs = np.zeros((4, 1))           
    
     success, rvec, tvec, inliers = cv2.solvePnPRansac(
-        object_points, image_points, K, distCoeffs=distCoeffs,
+        object_points, image_points, K, distCoeffs=dist_coeffs,
         iterationsCount=iterationsCount,
         reprojectionError=reprojectionError,
         flags=cv2.SOLVEPNP_ITERATIVE,
@@ -71,20 +75,17 @@ def compute_add(R_pred, t_pred, R_gt, t_gt, model_points):
     """
     Compute ADD (Average Distance of Model Points) for asymmetric objects.
     """
-    pred_points = (R_pred @ model_points.T + t_pred).T
-    gt_points = (R_gt @ model_points.T + t_gt).T
-    add = np.linalg.norm(pred_points - gt_points, axis=1).mean()
+    pred_pts = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
+    gt_pts = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
+    add = np.linalg.norm(pred_pts - gt_pts, axis=1).mean()
     return add
 
 def compute_adds(R_pred, t_pred, R_gt, t_gt, model_points):
     """
     Compute ADD-S (Average closest point distance) for symmetric objects.
     """
-    pred_points = (R_pred @ model_points.T + t_pred).T
-    gt_points = (R_gt @ model_points.T + t_gt).T
-
-    from scipy.spatial import cKDTree
-    tree = cKDTree(gt_points)
-    distances, _ = tree.query(pred_points, k=1)
-    adds = distances.mean()
+    pred_pts = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
+    gt_pts = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
+    dists = np.linalg.norm(pred_pts[:, np.newaxis, :] - gt_pts[np.newaxis, :, :], axis=2)
+    adds = np.min(dists, axis=1).mean()
     return adds
