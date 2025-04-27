@@ -77,13 +77,13 @@ def map_keypoints_to_original(keypoints_128, crop_box, crop_size=128):
     """
     Map keypoints from resized crop (128x128) back to original image.
     keypoints_128: (K, 2) list or array of (x, y)
-    crop_box: [x1, y1, x2, y2] bounding box in original image
+    crop_box: [x, y, w, h] bounding box in original image
     crop_size: size of the crop (default 128)
     Returns: list of (x, y) in original image coordinates
     """
-    x1, y1, x2, y2 = crop_box
-    crop_w = x2 - x1
-    crop_h = y2 - y1
+    x1, y1, w, h = crop_box
+    crop_w = w
+    crop_h = h
 
     scale_x = crop_w / crop_size
     scale_y = crop_h / crop_size
