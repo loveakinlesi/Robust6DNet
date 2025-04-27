@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from functools import lru_cache
+from torchvision import transforms
 
 class KeypointDataset(Dataset):
     def __init__(self, obj_id, root="data", split="train", val_ratio=0.2, transform=None):
@@ -39,15 +40,13 @@ class KeypointDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.images[idx]
         image = Image.open(img_path).convert("RGB")
-        image = np.array(image)
-        image = image.astype(np.float32) / 255.0  # normalize
-        image = torch.from_numpy(image).permute(2, 0, 1)  # (3, H, W)
-
-        heatmap = self._load_heatmap(self.heatmap_paths[idx])
-        heatmap = heatmap.astype(np.float32)
-        heatmap = torch.from_numpy(heatmap)
 
         if self.transform:
             image = self.transform(image)
+        else:
+            image = transforms.ToTensor()(image)
+
+        heatmap = self._load_heatmap(self.heatmap_paths[idx])
+        heatmap = torch.from_numpy(heatmap.astype(np.float32))
 
         return image, torch.tensor(heatmap, dtype=torch.float32), img_path.name
