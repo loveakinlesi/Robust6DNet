@@ -42,7 +42,7 @@ def farthest_point_sampling(
     return points[selected_indices]
 
 
-def project_3D_points(points_3D, R, t, K):
+def project_3D_points_to_2D(points_3D, R, t, K):
     """
     Projects 3D keypoints into 2D image space using P = K [R | t].
     - points_3D: (N, 3)
@@ -54,6 +54,7 @@ def project_3D_points(points_3D, R, t, K):
     points_cam = (R @ points_3D.T + t).T  # (N, 3)
     points_2D = (K @ points_cam.T).T
     return np.array(points_2D[:, :2] / points_2D[:, 2:]).astype(float)
+
 
 def map_keypoints_to_original(keypoints_128, crop_box, crop_size=128):
     """

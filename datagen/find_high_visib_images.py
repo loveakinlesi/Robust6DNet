@@ -12,7 +12,6 @@ def find_high_visib_instances(bop_root, obj_id, threshold=0.85):
         scene_id = scene_path.name
         gt_path = scene_path / "scene_gt.json"
         info_path = scene_path / "scene_gt_info.json"
-        camera_path = scene_path / "scene_camera.json"
 
         if not gt_path.exists() or not info_path.exists():
             continue
@@ -21,12 +20,9 @@ def find_high_visib_instances(bop_root, obj_id, threshold=0.85):
             gt_data = json.load(f)
         with open(info_path) as f:
             info_data = json.load(f)
-        with open(camera_path) as f:
-            camera_data = json.load(f)
 
         for img_id_str, gt_list in gt_data.items():
             info_list = info_data[img_id_str]
-            camera_list = camera_data[img_id_str]
 
             for idx, ann in enumerate(gt_list):
                 if ann["obj_id"] == obj_id:
@@ -38,7 +34,6 @@ def find_high_visib_instances(bop_root, obj_id, threshold=0.85):
                             "ann_idx": idx,
                             "visib_fract": visib,
                             "bbox_obj": info_list[idx].get("bbox_obj", 0.0),
-                            "K": camera_list["cam_K"]
                         })
                         break  # only one instance needed per image
 
