@@ -5,10 +5,9 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils.image_handling import pad_bbox
 from utils.keypoints import crop_and_resize_keypoints
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils.heatmap import generate_multi_gaussian_heatmaps
 
 HEATMAP_SIZE = (128, 128)
