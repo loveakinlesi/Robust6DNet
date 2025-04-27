@@ -1,5 +1,13 @@
 from PIL import Image
 
+def pad_bbox(bbox, offset: int=5):
+    x, y, w, h = bbox
+    x = x-offset
+    y = y-offset
+    w= w+(offset*2)
+    h= h+(offset*2)
+    return x, y, w, h
+
 def crop_image(image, bbox):
     x, y, w, h = bbox
     cropped_img = image[y:y+h, x:x+w]

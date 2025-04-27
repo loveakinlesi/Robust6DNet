@@ -5,7 +5,7 @@ from tqdm import tqdm
 from PIL import Image
 import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from utils.image_handling import crop_and_resize
+from utils.image_handling import crop_and_resize, pad_bbox
 
 CROP_SIZE = (128, 128)
 
@@ -26,7 +26,7 @@ def generate_crops(obj_id: int):
 
         try:
             image = Image.open(rgb_path).convert("RGB")
-            crop = crop_and_resize(image, bbox, CROP_SIZE)
+            crop = crop_and_resize(image, pad_bbox(bbox), CROP_SIZE)
             crop.save(output_dir / f"{image_id}.png")
         except Exception as e:
             print(f"[!] Failed to crop {rgb_path}: {e}")
