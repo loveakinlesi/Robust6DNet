@@ -25,10 +25,8 @@ def estimate_pose_pnp(object_points, image_points, K, dist_coeffs=None):
     if dist_coeffs is None:
         dist_coeffs = np.zeros((4, 1))
 
-    success, rvec, tvec, inliers = cv2.solvePnPRansac(
+    success, rvec, tvec = cv2.solvePnP(
         object_points, image_points, K, distCoeffs=dist_coeffs,
-            iterationsCount=5000,
-    reprojectionError=20,
         flags=cv2.SOLVEPNP_ITERATIVE
     )
     if not success:
@@ -59,10 +57,6 @@ def estimate_pose_pnp_ransac(object_points, image_points, K, dist_coeffs=None, i
 
 def compute_reprojection_error(R, t, object_points, image_points, K, dist_coeffs=None):
     """Compute mean 2D reprojection error."""
-    # proj_points, _ = cv2.projectPoints(object_points, cv2.Rodrigues(R)[0], t, K, distCoeffs=dist_coeffs)
-    # proj_points = proj_points.squeeze(1)  # (N, 2)
-    # error = np.linalg.norm(proj_points - image_points, axis=1)
-    # return error.mean()
     if dist_coeffs is None:
             dist_coeffs = np.zeros((4, 1))
     projected, _ = cv2.projectPoints(object_points, R, t, K, dist_coeffs)
@@ -75,8 +69,20 @@ def compute_add(R_pred, t_pred, R_gt, t_gt, model_points):
     """
     Compute ADD (Average Distance of Model Points) for asymmetric objects.
     """
+    # pred_pts = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
+    # gt_pts = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
+    # add = np.linalg.norm(pred_pts - gt_pts, axis=1).mean()
+    # return add
+
+
+    t_pred = np.array(t_pred).reshape(3)
+    t_gt = np.array(t_gt).reshape(3)
+    
+    # Perform matrix multiplication and addition
     pred_pts = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
     gt_pts = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
+
+    # Compute ADD
     add = np.linalg.norm(pred_pts - gt_pts, axis=1).mean()
     return add
 
