@@ -1,10 +1,14 @@
 from pathlib import Path
+import sys
 from PIL import Image
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from functools import lru_cache
 from torchvision import transforms
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from utils.heatmap import decode_heatmaps
 
 class KeypointDataset(Dataset):
     def __init__(self, obj_id, root="data", split="train", val_ratio=0.2, transform=None):
@@ -47,6 +51,7 @@ class KeypointDataset(Dataset):
             image = transforms.ToTensor()(image)
 
         heatmap = self._load_heatmap(self.heatmap_paths[idx])
+        keypoints = decode_heatmaps(heatmap)
         heatmap = torch.from_numpy(heatmap.astype(np.float32))
 
-        return image, torch.tensor(heatmap, dtype=torch.float32), img_path.name
+        return image, torch.tensor(heatmap, dtype=torch.float32), keypoints, img_path.name
