@@ -163,7 +163,7 @@ class KeypointNet(nn.Module):
                     images, heatmaps, keypoints = images.to(device), heatmaps.to(device), keypoints.to(device)
                     optimizer.zero_grad()
                     preds = self(images)
-                    loss_t, mse_loss_t, soft_pck_loss_t = criterion(preds, heatmaps, heatmaps)
+                    loss_t, mse_loss_t, soft_pck_loss_t = criterion(preds, heatmaps, keypoints)
                     # loss = criterion(preds, heatmaps)
                     loss_t.backward()
                     optimizer.step()
@@ -173,13 +173,18 @@ class KeypointNet(nn.Module):
             # Validation phase
             self.eval()
             val_loss = 0
+            val_mse_loss = 0
+            val_soft_pck_loss = 0
+            
             val_preds, val_targets = [], []
             with torch.no_grad():
-                for images, heatmaps, _ in tqdm(val_loader, desc=f"[Val] Epoch {epoch}"):
+                for images, heatmaps, keypoints, _ in tqdm(val_loader, desc=f"[Val] Epoch {epoch}"):
                     images, heatmaps, keypoints = images.to(device), heatmaps.to(device), keypoints.to(device)
                     preds = self(images)
-                    loss, mse_loss, soft_pck_loss = criterion(preds, heatmaps, heatmaps)
+                    loss, mse_loss, soft_pck_loss = criterion(preds, heatmaps, keypoints)
                     val_loss += loss.item()
+                    val_mse_loss+= mse_loss.item()
+                    val_soft_pck_loss +=soft_pck_loss.item()
                     val_preds.append(preds)
                     val_targets.append(heatmaps)
 
@@ -187,6 +192,8 @@ class KeypointNet(nn.Module):
             metrics = compute_metrics(torch.cat(val_preds), torch.cat(val_targets))
             train_loss /= len(train_loader)
             val_loss /= len(val_loader)
+            val_mse_loss/= len(val_loader)
+            val_soft_pck_loss/= len(val_loader)
 
             scheduler.step(val_loss)
 
@@ -196,8 +203,8 @@ class KeypointNet(nn.Module):
                 'time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'train/loss': train_loss,
                 'val/loss': val_loss,
-                'metrics/mse': mse_loss,
-                'metrics/soft_pck': soft_pck_loss,
+                'metrics/mse': val_mse_loss,
+                'metrics/soft_pck': val_soft_pck_loss,
                 'metrics/pck': metrics['pck'],
                 'metrics/mde': metrics['mde'], 
                 'lr': optimizer.param_groups[0]['lr']
