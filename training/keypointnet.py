@@ -1,5 +1,4 @@
 from pathlib import Path
-import sys
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,8 +6,6 @@ import matplotlib.pyplot as plt
 from torchinfo import summary
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from training.combined_loss import CombinedLoss
 
 
 class KeypointNet(nn.Module):
@@ -145,8 +142,7 @@ class KeypointNet(nn.Module):
 
         # Training setup
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-        # criterion = nn.MSELoss()
-        criterion = CombinedLoss(mse_weight=1.0, soft_pck_weight=1.0)
+        criterion = nn.MSELoss()
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
 
         # Initialize CSV logging
@@ -159,32 +155,25 @@ class KeypointNet(nn.Module):
             self.train()
             train_loss = 0
             with tqdm(train_loader, desc=f"[Train] Epoch {epoch}/{epochs}") as pbar:
-                for images, heatmaps, keypoints, _ in pbar:
-                    images, heatmaps, keypoints = images.to(device), heatmaps.to(device), keypoints.to(device)
-                    optimizer.zero_grad()
+                for images, heatmaps, _ in pbar:
+                    images, heatmaps = images.to(device), heatmaps.to(device)
+                    optimizer.zero_grad(set_to_none=True)
                     preds = self(images)
-                    loss_t, mse_loss_t, soft_pck_loss_t = criterion(preds, heatmaps, keypoints)
-                    # loss = criterion(preds, heatmaps)
-                    loss_t.backward()
+                    loss = criterion(preds, heatmaps)
+                    loss.backward()
                     optimizer.step()
-                    train_loss += loss_t.item()
-                    pbar.set_postfix({'loss': f'{loss_t.item():.4f}'})
+                    train_loss += loss.item()
+                    pbar.set_postfix({'loss': f'{loss.item():.4f}'})
 
             # Validation phase
             self.eval()
             val_loss = 0
-            val_mse_loss = 0
-            val_soft_pck_loss = 0
-            
             val_preds, val_targets = [], []
             with torch.no_grad():
-                for images, heatmaps, keypoints, _ in tqdm(val_loader, desc=f"[Val] Epoch {epoch}"):
-                    images, heatmaps, keypoints = images.to(device), heatmaps.to(device), keypoints.to(device)
+                for images, heatmaps, _ in tqdm(val_loader, desc=f"[Val] Epoch {epoch}"):
+                    images, heatmaps = images.to(device), heatmaps.to(device)
                     preds = self(images)
-                    loss, mse_loss, soft_pck_loss = criterion(preds, heatmaps, keypoints)
-                    val_loss += loss.item()
-                    val_mse_loss+= mse_loss.item()
-                    val_soft_pck_loss +=soft_pck_loss.item()
+                    val_loss += criterion(preds, heatmaps).item()
                     val_preds.append(preds)
                     val_targets.append(heatmaps)
 
@@ -192,8 +181,6 @@ class KeypointNet(nn.Module):
             metrics = compute_metrics(torch.cat(val_preds), torch.cat(val_targets))
             train_loss /= len(train_loader)
             val_loss /= len(val_loader)
-            val_mse_loss/= len(val_loader)
-            val_soft_pck_loss/= len(val_loader)
 
             scheduler.step(val_loss)
 
@@ -203,8 +190,7 @@ class KeypointNet(nn.Module):
                 'time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'train/loss': train_loss,
                 'val/loss': val_loss,
-                'metrics/mse': val_mse_loss,
-                'metrics/soft_pck': val_soft_pck_loss,
+                'metrics/mse': metrics['mse'],
                 'metrics/pck': metrics['pck'],
                 'metrics/mde': metrics['mde'], 
                 'lr': optimizer.param_groups[0]['lr']
