@@ -6,6 +6,7 @@ def pad_bbox(bbox, offset: int=5, limits=(0,0,640,480)):
     y = 0 if y-offset <= 0 else y-offset
     w= limits[2] if w+(offset*2) > limits[2] else w+(offset*2)
     h= limits[3] if h+(offset*2) > limits[3] else h+(offset*2)
+    x, y, w, h = int(x), int(y), int(w), int(h)
     return x, y, w, h
 
 def crop_image(image, bbox):
