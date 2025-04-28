@@ -1,5 +1,9 @@
 import cv2
 import numpy as np
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from utils.keypoints import project_3D_points_to_2D
 
 def compute_pck(pred_keypoints, gt_keypoints, threshold=5.0):
     """Compute Percentage of Correct Keypoints within threshold (PCK)."""
@@ -59,8 +63,10 @@ def compute_reprojection_error(R, t, object_points, image_points, K, dist_coeffs
     """Compute mean 2D reprojection error."""
     if dist_coeffs is None:
             dist_coeffs = np.zeros((4, 1))
-    projected, _ = cv2.projectPoints(object_points, R, t, K, dist_coeffs)
-    projected = projected.squeeze()
+    projected = project_3D_points_to_2D(object_points, R, t, K)        
+            
+    # projected, _ = cv2.projectPoints(object_points, R, t, K, dist_coeffs)
+    # projected = projected.squeeze()
     error = np.linalg.norm(projected - image_points, axis=1).mean()
     return error
 

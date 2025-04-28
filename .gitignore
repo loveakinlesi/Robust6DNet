@@ -5,3 +5,4 @@ datasets/lm/train_pbr
 data/crops
 data/heatmaps
 utils/__pycache__/*
+evaluation/testing/results/
