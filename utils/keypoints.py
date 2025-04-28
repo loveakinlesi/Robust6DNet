@@ -73,25 +73,25 @@ def crop_and_resize_keypoints(keypoints_2D, crop_box, target_size=(128, 128)):
     keypoints_2D_resized = keypoints_2D_cropped * np.array([scale_x, scale_y])
     return keypoints_2D_resized.astype(float)
 
-def map_keypoints_to_original(keypoints_128, crop_box, crop_size=128):
-    """
-    Map keypoints from resized crop (128x128) back to original image.
-    keypoints_128: (K, 2) list or array of (x, y)
-    crop_box: [x1, y1, x2, y2] bounding box in original image
-    crop_size: size of the crop (default 128)
-    Returns: list of (x, y) in original image coordinates
-    """
-    x1, y1, x2, y2 = crop_box
-    crop_w = x2 - x1
-    crop_h = y2 - y1
-
-    scale_x = crop_w / crop_size
-    scale_y = crop_h / crop_size
-
-    keypoints_orig = []
-    for x, y in keypoints_128:
-        x_orig = x1 + x * scale_x
-        y_orig = y1 + y * scale_y
-        keypoints_orig.append((x_orig, y_orig))
-
-    return keypoints_orig
+def map_keypoints_to_original(keypoints_2D_resized, crop_box, target_size=(128, 128)):
+     """
+     Reverse the crop and resize effects on 2D keypoints to restore original coordinates.
+     keypoints_2D_resized: (K, 2) list or array of resized (x, y)
+     crop_box: [x, y, w, h] bounding box in original image
+     target_size: size of the crop (default 128)
+     Returns: original keypoints in the original coordinate system
+     """
+    
+     x, y, w, h = crop_box
+    
+     # Calculate the scale factors
+     scale_x = target_size[0] / w
+     scale_y = target_size[1] / h
+    
+     # Reverse the scaling
+     keypoints_2D_cropped = keypoints_2D_resized / np.array([scale_x, scale_y])
+    
+     # Reverse the cropping
+     keypoints_2D_original = keypoints_2D_cropped + np.array([x, y])
+    
+     return keypoints_2D_original.astype(float)

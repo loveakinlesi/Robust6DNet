@@ -33,7 +33,7 @@ def estimate_pose_pnp(object_points, image_points, K, dist_coeffs=None):
         raise ValueError("PnP failed.")
     return rvec, tvec
 
-def estimate_pose_pnp_ransac(object_points, image_points, K, dist_coeffs=None, iterationsCount=5000, reprojectionError=20):
+def estimate_pose_pnp_ransac(object_points, image_points, K, dist_coeffs=None, iterationsCount=5000, reprojectionError=5):
     """
     Estimate pose using PnP (with or without RANSAC).
     object_points: (N, 3)
